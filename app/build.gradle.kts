@@ -1,5 +1,15 @@
+import java.util.Properties
+import kotlin.apply
+
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists())
+        file.inputStream().use { load(it) }
+}
+
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -12,6 +22,7 @@ android {
 
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 
     defaultConfig {
@@ -22,6 +33,12 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField(
+            "String",
+            "OPEN_WEATHER_API_KEY",
+            "\"${localProperties.getProperty("OPEN_WEATHER_API_KEY") ?: ""}\""
+        )
     }
 
     buildTypes {
