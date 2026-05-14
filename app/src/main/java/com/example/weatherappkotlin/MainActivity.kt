@@ -3,18 +3,30 @@ package com.example.weatherappkotlin
 import android.os.Bundle
 import android.view.View
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import coil.load
 import com.example.weatherappkotlin.databinding.ActivityMainBinding
+import com.example.weatherappkotlin.model.UiState
 import com.example.weatherappkotlin.network.RetrofitClient
+import com.example.weatherappkotlin.repository.WeatherRepository
+import com.example.weatherappkotlin.viewmodel.WeatherViewModel
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding;
+
+    private val viewModel: WeatherViewModel by viewModels {
+        WeatherViewModelFactory(WeatherRepository(RetrofitClient.weatherApi))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,55 +42,61 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.searchButton.setOnClickListener {
-            val city = binding.cityInput.text.toString().trim()
-            if (city.isNotEmpty())
-                fetchWeather(city)
+            viewModel.search(binding.cityInput.text.toString())
+        }
+
+        observeState()
+    }
+
+    private fun observeState() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState.collect { state -> render(state) }
+            }
         }
     }
 
-    private fun fetchWeather(city: String) {
+    private fun render(state: UiState) {
         // Show loading, hide everything else
-        binding.loadingSpinner.visibility = View.VISIBLE
+        binding.loadingSpinner.visibility = View.GONE
         binding.weatherCard.visibility = View.GONE
         binding.errorMessage.visibility = View.GONE
 
-        lifecycleScope.launch {
-            try {
-                val response = RetrofitClient.weatherApi.getWeather(
-                    city = city,
-                    apiKey = BuildConfig.OPEN_WEATHER_API_KEY
-                )
-
-                // Success - populate UI
-                binding.cityName.text = "${response.name}, ${response.sys.country}"
-                binding.temperature.text = "${response.main.temp.toInt()}°C"
-                binding.description.text =
-                    response.weather.first().description.replaceFirstChar() { it.uppercase() }
-                binding.feelsLike.text = "Feels like ${response.main.feelsLike.toInt()}°C"
-                binding.humidity.text = "${response.main.humidity}%"
-                binding.wind.text = "${response.wind.speed}m/s"
-                binding.pressure.text = "${response.main.pressure}hPa"
-
-                val iconUrl =
-                    "https://openweathermap.org/img/wn/${response.weather.first().icon}@2x.png"
-
-                binding.weatherIcon.load(iconUrl)
-
-                binding.loadingSpinner.visibility = View.GONE
-                binding.weatherCard.visibility = View.VISIBLE
-            } catch (e: retrofit2.HttpException) {
-                binding.loadingSpinner.visibility = View.GONE
-                binding.errorMessage.text = when (e.code()) {
-                    401 -> "Invalid API key"
-                    404 -> "City not found"
-                    else -> "HTTP error ${e.code()}"
-                }
-                binding.errorMessage.visibility = View.VISIBLE
-            } catch (e: Exception) {
-                binding.loadingSpinner.visibility = View.GONE
-                binding.errorMessage.text = "Network error: ${e.message}"
-                binding.errorMessage.visibility = View.VISIBLE
+        when (state) {
+            UiState.Idle -> {
+                // Nothing to show. Fresh app launch
             }
+
+            UiState.Loading -> {
+                binding.loadingSpinner.visibility = View.VISIBLE
+            }
+
+            is UiState.Success -> {
+                binding.weatherCard.visibility = View.VISIBLE
+                val data = state.data
+                binding.cityName.text = data.cityAndCountry
+                binding.temperature.text = "${data.temperatureC}°C"
+                binding.description.text = data.description
+                binding.feelsLike.text = "Feels like ${data.feelsLikeC}°C"
+                binding.humidity.text = "${data.humidityPercent}%"
+                binding.wind.text = "${data.windMs}m/s"
+                binding.pressure.text = "${data.pressureHpa}hPa"
+                binding.weatherIcon.load(data.iconUrl)
+            }
+
+            is UiState.Error -> {
+                binding.errorMessage.visibility = View.VISIBLE
+                binding.errorMessage.text = state.message
+            }
+        }
+    }
+
+    private class WeatherViewModelFactory(
+        private val repository: WeatherRepository
+    ) : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            @Suppress("UNCHECKED_CAST")
+            return WeatherViewModel(repository) as T
         }
     }
 }

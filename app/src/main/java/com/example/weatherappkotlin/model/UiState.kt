@@ -4,7 +4,7 @@ sealed class UiState {
     data object Idle : UiState()
     data object Loading : UiState()
     data class Success(val data: WeatherUiData) : UiState()
-    data class Error(val data: String) : UiState()
+    data class Error(val message: String) : UiState()
 }
 
 data class WeatherUiData(
