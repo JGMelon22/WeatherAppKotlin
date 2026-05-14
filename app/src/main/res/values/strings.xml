@@ -3,12 +3,15 @@
     <string name="title">Weather</string>
     <string name="city_hint">Enter city</string>
     <string name="search">Search</string>
-    <string name="feels_like">Feels like %1$s</string>
     <string name="humidity">Humidity</string>
     <string name="wind">Wind</string>
     <string name="pressure">Pressure</string>
+    <string name="weather_icon_desc">Weather icon</string>
+
+    <!-- Formatted strings for dynamic values -->
+    <string name="temperature_value">%1$d°C</string>
+    <string name="feels_like_value">Feels like %1$d°C</string>
     <string name="humidity_value">%1$d%%</string>
     <string name="wind_value">%1$.1f m/s</string>
     <string name="pressure_value">%1$d hPa</string>
-    <string name="weather_icon_desc">Weather icon</string>
 </resources>

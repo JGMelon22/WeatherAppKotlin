@@ -75,12 +75,12 @@ class MainActivity : AppCompatActivity() {
                 binding.weatherCard.visibility = View.VISIBLE
                 val data = state.data
                 binding.cityName.text = data.cityAndCountry
-                binding.temperature.text = "${data.temperatureC}°C"
+                binding.temperature.text = getString(R.string.temperature_value, data.temperatureC)
                 binding.description.text = data.description
-                binding.feelsLike.text = "Feels like ${data.feelsLikeC}°C"
-                binding.humidity.text = "${data.humidityPercent}%"
-                binding.wind.text = "${data.windMs}m/s"
-                binding.pressure.text = "${data.pressureHpa}hPa"
+                binding.feelsLike.text = getString(R.string.feels_like_value, data.feelsLikeC)
+                binding.humidity.text = getString(R.string.humidity_value, data.humidityPercent)
+                binding.wind.text = getString(R.string.wind_value, data.windMs)
+                binding.pressure.text = getString(R.string.pressure_value, data.pressureHpa)
                 binding.weatherIcon.load(data.iconUrl)
             }
 
