@@ -12,7 +12,7 @@ data class WeatherResponse(
     val sys: Sys
 )
 
-@kotlinx.serialization.Serializable
+@Serializable
 data class Weather(
     val description: String,
     val icon: String
